@@ -7,7 +7,7 @@ import requests
 REPO_OWNER = "demondeployer7"
 REPO_NAME = "sample_deployment"
 FILE_PATH = "data.csv"
-GITHUB_TOKEN = "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"
+GITHUB_TOKEN = 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
 
 API_URL = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{FILE_PATH}"
 
