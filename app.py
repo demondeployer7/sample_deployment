@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import base64
 import requests
+import io  # For reading string data as CSV
 
 # Constants
 REPO_OWNER = "demondeployer7"
@@ -11,6 +12,7 @@ GITHUB_TOKEN = st.secrets["github_token"]
 
 API_URL = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{FILE_PATH}"
 
+# Function to fetch the file from GitHub
 def get_file_from_github():
     headers = {"Authorization": f"token {GITHUB_TOKEN}"}
     response = requests.get(API_URL, headers=headers)
@@ -29,7 +31,7 @@ def get_file_from_github():
             st.text(f"Could not parse GitHub response. Raw response:\n{response.text}")
         return None, None
 
-
+# Function to update the file on GitHub
 def update_file_on_github(updated_csv, sha):
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
@@ -45,7 +47,7 @@ def update_file_on_github(updated_csv, sha):
     response = requests.put(API_URL, headers=headers, json=data)
     return response.status_code == 200
 
-# UI
+# Streamlit UI
 st.title("Student Entry Form")
 
 name = st.text_input("Enter your name:")
@@ -56,14 +58,18 @@ if st.button("Submit"):
         with st.spinner("Saving to GitHub..."):
             content, sha = get_file_from_github()
             if content:
-                df = pd.read_csv(pd.compat.StringIO(content))
+                try:
+                    df = pd.read_csv(io.StringIO(content))
+                except pd.errors.EmptyDataError:
+                    df = pd.DataFrame(columns=["name", "roll_no"])  # Handle empty CSV
+
                 new_entry = pd.DataFrame({"name": [name], "roll_no": [roll_no]})
                 updated_df = pd.concat([df, new_entry], ignore_index=True)
                 csv_str = updated_df.to_csv(index=False)
 
                 if update_file_on_github(csv_str, sha):
-                    st.success("Entry added successfully!")
+                    st.success("✅ Entry added successfully!")
                 else:
-                    st.error("Failed to update the file on GitHub.")
+                    st.error("❌ Failed to update the file on GitHub.")
     else:
-        st.warning("Please fill out both fields.")
+        st.warning("⚠️ Please fill out both fields.")
