@@ -14,14 +14,21 @@ API_URL = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{FILE
 def get_file_from_github():
     headers = {"Authorization": f"token {GITHUB_TOKEN}"}
     response = requests.get(API_URL, headers=headers)
+
     if response.status_code == 200:
         content = response.json()
         decoded = base64.b64decode(content["content"]).decode("utf-8")
         sha = content["sha"]
         return decoded, sha
     else:
-        st.error("Failed to fetch file from GitHub")
+        st.error(f"❌ Failed to fetch file from GitHub (Status Code: {response.status_code})")
+        try:
+            error_message = response.json().get("message", "No message in response")
+            st.text(f"GitHub Error: {error_message}")
+        except Exception as e:
+            st.text(f"Could not parse GitHub response. Raw response:\n{response.text}")
         return None, None
+
 
 def update_file_on_github(updated_csv, sha):
     headers = {
